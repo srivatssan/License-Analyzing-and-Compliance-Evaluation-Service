@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PaaC Evaluation Results</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/aig-bootstrap-override.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="aig-background">
+
+<div class="container mt-5" x-data="paacResultsViewer()" x-init="loadResults()">
+    <div class="aig-header text-center mb-5">
+        <img src="/images/aig-logo.png" alt="AIG Logo" class="img-fluid mb-4" style="max-height: 120px;">
+        <h2 class="aig-heading mt-4">Policy as a Code Evaluation</h2>
+        <p class="text-muted">View compliance verdicts of library dependencies with SPDX expressions</p>
+
+        <!-- Navigation Buttons -->
+        <div class="d-flex justify-content-center gap-2 mt-3 mb-3 flex-wrap">
+            <a href="/index.html" class="btn btn-primary">Home</a>
+            <a href="/compliance-run.html" class="btn btn-outline-primary">Compliance Tracker</a>
+            <a href="/licenses.html" class="btn btn-outline-primary">SPDX Licenses</a>
+            <a href="/shutdown.html" class="btn btn-outline-danger">Shutdown</a>
+        </div>
+
+        <!-- Search Form -->
+        <form @submit.prevent="loadResultsByUUID(searchUuid)" class="d-flex justify-content-center mt-3">
+            <input type="text" class="form-control me-2" style="max-width: 400px;" placeholder="Enter UUID to search..." x-model="searchUuid">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+
+    <!-- Overall Verdict Banner -->
+    <div class="mb-4 text-center" x-show="overallVerdict">
+        <h4 class="fw-bold">Overall Compliance Verdict</h4>
+        <div class="display-5 mt-2"
+             :class="{
+                'text-success': overallVerdict === 'COMPLIANT',
+                'text-warning': overallVerdict === 'NEEDS_REVIEW',
+                'text-danger': overallVerdict === 'NON_COMPLIANT'
+             }"
+             x-text="overallVerdict.replace('_', ' ')">
+        </div>
+    </div>
+
+    <!-- No Results Message -->
+    <template x-if="allResults.length === 0 && searchCompleted">
+        <div class="text-center my-4">
+            <p class="text-muted">No compliance results found for the provided UUID.</p>
+        </div>
+    </template>
+
+    <!-- Results Table -->
+    <template x-if="allResults.length > 0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover aig-table">
+                <thead class="table-light">
+                <tr>
+                    <th>Library Name</th>
+                    <th>Version</th>
+                    <th>SPDX Expression</th>
+                    <th>Verdict</th>
+                    <th>Explanation</th>
+                </tr>
+                </thead>
+                <tbody>
+                <template x-for="(item, index) in results" :key="item.library + item.spdxExpression + index">
+                    <tr>
+                        <td x-text="item.library"></td>
+                        <td>-</td> <!-- Version not included in PolicyComplianceResult -->
+                        <td x-text="item.spdxExpression"></td>
+                        <td :class="{
+                                'text-success fw-bold': item.complianceResult === 'PASS' || item.complianceResult === 'COMPLIANT',
+                                'text-warning fw-bold': item.complianceResult === 'REVIEW' || item.complianceResult === 'NEEDS_REVIEW',
+                                'text-danger fw-bold': item.complianceResult === 'FAIL' || item.complianceResult === 'NON_COMPLIANT'
+                            }"
+                            x-text="item.complianceResult">
+                        </td>
+                        <td x-text="item.explanation"></td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <!-- Pagination -->
+    <template x-if="allResults.length > 0">
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div>
+                Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary btn-sm" :disabled="currentPage === 1" @click="prevPage()">Prev</button>
+                <button class="btn btn-outline-primary btn-sm ms-2" :disabled="currentPage === totalPages" @click="nextPage()">Next</button>
+            </div>
+        </div>
+    </template>
+</div>
+
+<!-- AlpineJS App -->
+<script>
+    function paacResultsViewer() {
+        return {
+            allResults: [],
+            overallVerdict: '',
+            searchUuid: '',
+            searchCompleted: false,
+            pageSize: 10,
+            currentPage: 1,
+
+            get results() {
+                const start = (this.currentPage - 1) * this.pageSize;
+                return this.allResults.slice(start, start + this.pageSize);
+            },
+
+            get totalPages() {
+                return Math.ceil(this.allResults.length / this.pageSize) || 1;
+            },
+
+            async loadResults() {
+                try {
+                    const response = await fetch('/api/policy/check');
+                    if (!response.ok) throw new Error();
+                    const data = await response.json();
+                    this.allResults = data.dependencyVerdicts || [];
+                    this.overallVerdict = data.overallVerdict || '';
+                    this.searchCompleted = true;
+                } catch (e) {
+                    this.allResults = [];
+                    this.overallVerdict = '';
+                    this.searchCompleted = true;
+                }
+            },
+
+            async loadResultsByUUID(uuid) {
+                if (!uuid) return;
+                try {
+                    // Fetch the verdicts list
+                    const resultsResponse = await fetch(`/api/policy/check/${uuid}`);
+                    if (!resultsResponse.ok) throw new Error("No results for UUID");
+                    const results = await resultsResponse.json();
+                    this.allResults = results || [];
+
+                    // Fetch the overall verdict separately
+                    const verdictResponse = await fetch(`/api/policy/check/overall/${uuid}`);
+                    if (verdictResponse.ok) {
+                        this.overallVerdict = await verdictResponse.text();
+                    } else {
+                        this.overallVerdict = '';
+                    }
+
+                    this.searchCompleted = true;
+                    this.currentPage = 1;
+                } catch (e) {
+                    console.error('Error loading UUID results or overall verdict:', e);
+                    this.allResults = [];
+                    this.overallVerdict = '';
+                    this.searchCompleted = true;
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                }
+            },
+
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                }
+            }
+        };
+    }
+</script>
+
+</body>
+</html>

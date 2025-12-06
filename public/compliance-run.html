@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Compliance Run Records</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/aig-bootstrap-override.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="aig-background">
+
+<div class="container mt-5" x-data="complianceRunViewer()" x-init="loadRuns()">
+  <div class="aig-header text-center mb-5">
+    <img src="/images/aig-logo.png" alt="AIG Logo" class="img-fluid mb-4" style="max-height: 120px;">
+    <h2 class="aig-heading mt-4">Compliance Run Tracker</h2>
+    <p class="text-muted">Monitor and update compliance verdicts linked to analyzed repositories</p>
+
+    <!-- Navigation Buttons -->
+    <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
+      <a href="/index.html" class="btn btn-primary">Home</a>
+      <a href="/paac-results.html" class="btn btn-outline-primary">PaaC Results</a>
+      <a href="/licenses.html" class="btn btn-outline-primary">SPDX Licenses</a>
+      <a href="/shutdown.html" class="btn btn-outline-danger">Shutdown</a>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <h5 class="fw-bold">Filter by UUID</h5>
+    <input type="text" class="form-control" placeholder="Enter full or partial UUID..." x-model="searchQuery">
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover aig-table">
+      <thead class="table-light">
+      <tr>
+        <th>UUID</th>
+        <th>Created At</th>
+        <th>Path</th>
+        <th>Overall Verdict</th>
+        <th>Action</th>
+      </tr>
+      </thead>
+      <tbody>
+      <template x-for="run in filteredRuns()" :key="run.uuid">
+        <tr>
+          <td x-text="run.uuid"></td>
+          <td x-text="run.createdAt"></td>
+          <td x-text="run.path"></td>
+          <td>
+            <select class="form-select"
+                    x-model="run.updatedVerdict"
+                    :class="{
+                                    'text-success': run.updatedVerdict === 'COMPLIANT',
+                                    'text-warning': run.updatedVerdict === 'NEEDS_REVIEW',
+                                    'text-danger': run.updatedVerdict === 'NON_COMPLIANT'
+                                }">
+              <option value="COMPLIANT">COMPLIANT</option>
+              <option value="NEEDS_REVIEW">NEEDS_REVIEW</option>
+              <option value="NON_COMPLIANT">NON_COMPLIANT</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-primary"
+                    @click="saveVerdict(run.uuid, run.updatedVerdict)">
+              Save
+            </button>
+          </td>
+        </tr>
+      </template>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function complianceRunViewer() {
+      return {
+          runs: [],
+          searchQuery: '',
+
+          async loadRuns() {
+              const res = await fetch('/api/compliance-runs');
+              const data = await res.json();
+              this.runs = data.map(run => ({
+                  ...run,
+                  updatedVerdict: run.overallVerdict
+              }));
+          },
+
+          filteredRuns() {
+              const query = this.searchQuery.toLowerCase().trim();
+              return this.runs.filter(run =>
+                  run.uuid.toLowerCase().includes(query)
+              );
+          },
+
+          saveVerdict(uuid, verdict) {
+              fetch(`/api/compliance-runs/${uuid}`, {
+                  method: 'PUT',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ overallVerdict: verdict })
+              })
+              .then(res => {
+                  if (!res.ok) throw new Error("Failed to update verdict");
+                  return res.json();
+              })
+              .then(() => {
+                  alert("Verdict updated successfully!");
+                  this.loadRuns();
+              })
+              .catch(err => {
+                  console.error(err);
+                  alert("Failed to update verdict.");
+              });
+          }
+      }
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,130 @@
+
+/* AIG Bootstrap 5 Full Override CSS */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ===== Root Variables ===== */
+:root {
+  --aig-primary: #003865;
+  --aig-secondary: #0077c8;
+  --aig-accent: #e87722;
+  --aig-light: #f4f5f7;
+  --aig-dark: #1a1a1a;
+  --aig-muted: #6c757d;
+  --aig-font-family: 'Avenir Next', 'Avenir', 'Futura', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+
+  --bs-body-bg: var(--aig-light);
+  --bs-body-color: var(--aig-dark);
+  --bs-font-sans-serif: var(--aig-font-family);
+
+  --bs-primary: var(--aig-primary);
+  --bs-secondary: var(--aig-secondary);
+  --bs-success: #28a745;
+  --bs-info: #17a2b8;
+  --bs-warning: #ffc107;
+  --bs-danger: #dc3545;
+  --bs-light: var(--aig-light);
+  --bs-dark: var(--aig-dark);
+}
+
+/* ===== Body and Typography ===== */
+body, html {
+  font-family: var(--aig-font-family);
+  font-size: 1rem;
+  font-weight: 400;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+h1, h2, h3, h4, h5, h6, .aig-heading {
+  font-family: var(--aig-font-family);
+  font-weight: 600;
+  color: var(--aig-primary);
+}
+
+/* ===== Buttons ===== */
+.btn {
+  font-weight: 500;
+  border-radius: 0.375rem;
+}
+.btn-primary {
+  background-color: var(--aig-primary);
+  border-color: var(--aig-primary);
+}
+.btn-primary:hover {
+  background-color: #002b4c;
+}
+.btn-secondary {
+  background-color: var(--aig-secondary);
+  border-color: var(--aig-secondary);
+}
+.btn-outline-danger {
+  color: var(--bs-danger);
+  border-color: var(--bs-danger);
+}
+.btn-outline-danger:hover {
+  background-color: var(--bs-danger);
+  color: white;
+}
+
+/* ===== Forms ===== */
+input[type="text"], input[type="email"], input[type="password"], select, textarea {
+  border: 1px solid #ccc;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--aig-primary);
+  box-shadow: 0 0 0 0.2rem rgba(0, 56, 101, 0.25);
+}
+
+/* ===== Tables ===== */
+.table {
+  border-collapse: collapse;
+}
+.table thead {
+  background-color: var(--aig-primary);
+  color: white;
+}
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: #e9ecef;
+}
+.table-hover tbody tr:hover {
+  background-color: #d6e8f3;
+}
+
+/* ===== Alerts ===== */
+.alert-warning {
+  background-color: #fff3cd;
+  border-color: #ffeeba;
+  color: #856404;
+  font-weight: 500;
+}
+
+/* ===== Utilities and Layouts ===== */
+.shadow-sm {
+  box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important;
+}
+.text-muted {
+  color: var(--aig-muted) !important;
+}
+.fw-bold {
+  font-weight: 700 !important;
+}
+
+/* ===== Custom Components ===== */
+.aig-title {
+  color: var(--aig-primary);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+.aig-container { padding: 2rem; background-color: var(--bs-body-bg); }
+.aig-header { border-bottom: 1px solid #ccc; padding-bottom: 1rem; }
+.aig-user-meta { font-size: 0.95rem; color: var(--aig-muted); }
+
+.aig-table { font-size: 0.95rem; }
+.aig-background { background-color: var(--bs-body-bg); }
+.aig-heading { font-size: 1.75rem; color: var(--aig-primary); font-weight: 600; }
+.aig-form { max-width: 800px; margin: auto; }
+
+.equal-width-btn {
+  min-width: 180px;
+}
