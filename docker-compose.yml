@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # LACES Application
+  laces-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: laces-app
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - DATABASE_PATH=/app/data/paacdb.sqlite
+      - LOG_FILE=/app/logs/app.log
+      - ANALYZER_WORK_DIR=/tmp/oss-analyzer
+      - DOCKER_IMAGE=ghcr.io/oss-review-toolkit/ort:latest
+      - DOCKER_WORKSPACE=/workspace
+      - APPROVED_LICENSES=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,0BSD,Unlicense,CC0-1.0,EPL-2.0,MPL-2.0,BSD-3-Clause-Clear,BSL-1.0,WTFPL,Zlib,Python-2.0
+      - DENIED_LICENSES=SSPL-1.0,BSL-1.1,RPL-1.5,GPL-3.0,AGPL-3.0,BUSL-1.1
+      - SHUTDOWN_API_KEY=${SHUTDOWN_API_KEY:-dummy-key}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    volumes:
+      # Persist database
+      - laces-data:/app/data
+      # Persist logs
+      - laces-logs:/app/logs
+      # Mount Docker socket to run ORT containers from within the app
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Share ORT working directory
+      - ort-workspace:/tmp/oss-analyzer
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - laces-network
+    # Run as root to access Docker socket (required for spawning ORT containers)
+    user: root
+
+volumes:
+  laces-data:
+    driver: local
+  laces-logs:
+    driver: local
+  ort-workspace:
+    driver: local
+
+networks:
+  laces-network:
+    driver: bridge
